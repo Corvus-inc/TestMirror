@@ -952,7 +952,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1009593946}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f0d8d2596d024444cadb01b53ffb6e73, type: 3}
+  m_Script: {fileID: 11500000, guid: 8aab4c8111b7c411b9b92cf3dbc5bd4e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   dontDestroyOnLoad: 1
@@ -969,7 +969,7 @@ MonoBehaviour:
   playerPrefab: {fileID: 5036024277566133339, guid: a397d0eca9bbe3241b49758067f3b34d,
     type: 3}
   autoCreatePlayer: 1
-  playerSpawnMethod: 0
+  playerSpawnMethod: 1
   spawnPrefabs: []
   timeInterpolationGui: 0
 --- !u!1 &1039807514
@@ -1500,21 +1500,6 @@ PrefabInstance:
       propertyPath: sceneId
       value: 2640577947
       objectReference: {fileID: 0}
-    - target: {fileID: 1550038266233042979, guid: 280d0f117ed423943ac95527c763163a,
-        type: 3}
-      propertyPath: sceneId
-      value: 3026760294
-      objectReference: {fileID: 0}
-    - target: {fileID: 1550038266233042979, guid: 280d0f117ed423943ac95527c763163a,
-        type: 3}
-      propertyPath: visible
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1550038266233042979, guid: 280d0f117ed423943ac95527c763163a,
-        type: 3}
-      propertyPath: serverOnly
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 3000580135024254179, guid: 280d0f117ed423943ac95527c763163a,
         type: 3}
       propertyPath: sceneId
@@ -1615,8 +1600,7 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents:
-    - {fileID: 1550038266233042979, guid: 280d0f117ed423943ac95527c763163a, type: 3}
+    m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 280d0f117ed423943ac95527c763163a, type: 3}
 --- !u!4 &2321887526920167646 stripped
 Transform:
