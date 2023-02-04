@@ -23,8 +23,6 @@ public class RandomSpawnPoint : MonoBehaviour
             var tr = transform.GetChild(i);
             _numList.Add(tr.GetSiblingIndex());
             _points.Add(tr);
-
-            // tr.AddComponent<NetworkStartPosition>();
         }
     }
 

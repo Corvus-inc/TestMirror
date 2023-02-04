@@ -114,7 +114,7 @@ namespace Mirror
         /// <summary>List of transforms populated by NetworkStartPositions</summary>
         public static List<Transform> startPositions = new List<Transform>();
         public static int startPositionIndex;
-
+        private List<Transform> _lockedStartPositions = new List<Transform>();
         [Header("Debug")]
         public bool timeInterpolationGui = false;
 
@@ -1066,7 +1066,8 @@ namespace Mirror
 
             if (playerSpawnMethod == PlayerSpawnMethod.Random)
             {
-                return startPositions[UnityEngine.Random.Range(0, startPositions.Count)];
+                startPositionIndex = UnityEngine.Random.Range(0, startPositions.Count);
+                return startPositions[startPositionIndex];
             }
             else
             {
@@ -1285,6 +1286,7 @@ namespace Mirror
         // The default implementation for this function creates a new player object from the playerPrefab.
         public virtual void OnServerAddPlayer(NetworkConnectionToClient conn)
         {
+            Debug.Log("<Color=Yellow>Add player Start</Color>");
             Transform startPos = GetStartPosition();
             GameObject player = startPos != null
                 ? Instantiate(playerPrefab, startPos.position, startPos.rotation)
@@ -1294,6 +1296,20 @@ namespace Mirror
             // => appending the connectionId is WAY more useful for debugging!
             player.name = $"{playerPrefab.name} [connId={conn.connectionId}]";
             NetworkServer.AddPlayerForConnection(conn, player);
+            
+            
+            
+            _lockedStartPositions. Add(startPos);
+            UnRegisterStartPosition(startPos);
+            Debug.Log($"<Color=Yellow>UnRegister {startPositionIndex}</Color>");
+            
+            if (startPositions.Count > 0) return;
+            foreach (var position in _lockedStartPositions)
+            {
+                RegisterStartPosition(position);
+                Debug.Log($"<Color=Yellow>Registered {startPositionIndex}</Color>");
+            }
+            _lockedStartPositions.Clear();
         }
 
         // DEPRECATED 2022-05-12
