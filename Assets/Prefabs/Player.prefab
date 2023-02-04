@@ -245,7 +245,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5036024277566133339}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -9.85, y: 5.88, z: 4.6}
+  m_LocalPosition: {x: 0, y: 1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -389,6 +389,7 @@ MonoBehaviour:
   look: {x: 0, y: 0}
   jump: 0
   sprint: 0
+  attack: 0
   analogMovement: 0
   cursorLocked: 0
   cursorInputForLook: 0
@@ -434,6 +435,9 @@ MonoBehaviour:
   FootstepAudioVolume: 0.5
   JumpHeight: 3
   Gravity: -35
+  AttackForce: 1.2
+  AttackRange: 1
+  AttackTimeout: 0.5
   JumpTimeout: 0.5
   FallTimeout: 0.15
   Grounded: 1

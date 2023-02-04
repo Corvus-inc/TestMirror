@@ -8,6 +8,7 @@ public class PlayerInputAssets : MonoBehaviour
    		public Vector2 look;
    		public bool jump;
    		public bool sprint;
+   		public bool attack;
    
    		[Header("Movement Settings")]
    		public bool analogMovement;
@@ -39,6 +40,10 @@ public class PlayerInputAssets : MonoBehaviour
    		{
    			SprintInput(value.isPressed);
    		}
+        public void OnAttack(InputValue value)
+   		{
+   			AttackInput(value.isPressed);
+   		}
    #endif
    
    
@@ -60,6 +65,11 @@ public class PlayerInputAssets : MonoBehaviour
    		public void SprintInput(bool newSprintState)
    		{
    			sprint = newSprintState;
+   		}
+        
+        public void AttackInput(bool newAttackState)
+   		{
+   			attack = newAttackState;
    		}
    
    		private void OnApplicationFocus(bool hasFocus)

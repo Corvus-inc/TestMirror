@@ -36,6 +36,15 @@ namespace Player
         public float Gravity = -15.0f;
 
         [Space(10)]
+        
+        public float AttackForce = 2f;
+        [Tooltip("The range of the character's dash")]
+        public float AttackRange = 5f;
+        [Tooltip("Time required to pass before being able to attack again. Set to 0f to instantly attack again")]
+        public float AttackTimeout = 1f;
+        
+        [Space(10)]
+        
         [Tooltip("Time required to pass before being able to jump again. Set to 0f to instantly jump again")]
         public float JumpTimeout = 0.50f;
 
@@ -80,10 +89,12 @@ namespace Player
         private float _animationBlend;
         private float _targetRotation = 0.0f;
         private float _rotationVelocity;
+        private float _forwardVelocity;
         private float _verticalVelocity;
         private float _terminalVelocity = 53.0f;
 
         // timeout deltatime
+        private float _attackTimeoutDelta;
         private float _jumpTimeoutDelta;
         private float _fallTimeoutDelta;
 
@@ -153,6 +164,7 @@ namespace Player
             AssignAnimationIDs();
 
             // reset our timeouts on start
+            _attackTimeoutDelta = AttackTimeout;
             _jumpTimeoutDelta = JumpTimeout;
             _fallTimeoutDelta = FallTimeout;
         }
@@ -162,7 +174,8 @@ namespace Player
             if(!isLocalPlayer) return;
 
             _hasAnimator = TryGetComponent(out _animator);
-
+            
+            Attack();
             JumpAndGravity();
             GroundedCheck();
             Move();
@@ -278,7 +291,7 @@ namespace Player
             Vector3 targetDirection = Quaternion.Euler(0.0f, _targetRotation, 0.0f) * Vector3.forward;
 
             // move the player
-            _controller.Move(targetDirection.normalized * (_speed * Time.deltaTime) +
+            _controller.Move(targetDirection.normalized * (_speed * _forwardVelocity * Time.deltaTime) +
                              new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
 
             // update animator if using character
@@ -356,6 +369,31 @@ namespace Player
             {
                 _verticalVelocity += Gravity * Time.deltaTime;
             }
+        }
+
+        private void Attack()
+        {
+            // Attack
+            if (_input.attack && _attackTimeoutDelta <= 0.0f)
+            {
+                _attackTimeoutDelta = AttackTimeout;
+                
+                _forwardVelocity = AttackForce;
+            }
+            
+            // Attack timeout
+            if (_attackTimeoutDelta >= 0.0f)
+            {
+                _attackTimeoutDelta -= Time.deltaTime;
+            }
+
+            if (_forwardVelocity > 1)
+            {
+                _forwardVelocity -= Time.deltaTime * AttackRange;
+            }
+            else _forwardVelocity = 1;
+            
+            _input.attack = false;
         }
 
         private static float ClampAngle(float lfAngle, float lfMin, float lfMax)
