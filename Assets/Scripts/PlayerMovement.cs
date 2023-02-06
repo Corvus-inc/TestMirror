@@ -1,24 +1,24 @@
- using Cinemachine;
+using System;
+using System.Collections;
+using Cinemachine;
 using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Random = UnityEngine.Random;
 
 namespace Player
 {
-    
     [RequireComponent(typeof(CharacterController))]
     [RequireComponent(typeof(PlayerInput))]
     public class PlayerMovement : NetworkBehaviour
     {
-       [Header("Player")]
-        [Tooltip("Move speed of the character in m/s")]
+        [Header("Player")] [Tooltip("Move speed of the character in m/s")]
         public float MoveSpeed = 2.0f;
 
         [Tooltip("Sprint speed of the character in m/s")]
         public float SprintSpeed = 5.335f;
 
-        [Tooltip("How fast the character turns to face movement direction")]
-        [Range(0.0f, 0.3f)]
+        [Tooltip("How fast the character turns to face movement direction")] [Range(0.0f, 0.3f)]
         public float RotationSmoothTime = 0.12f;
 
         [Tooltip("Acceleration and deceleration")]
@@ -28,23 +28,21 @@ namespace Player
         public AudioClip[] FootstepAudioClips;
         [Range(0, 1)] public float FootstepAudioVolume = 0.5f;
 
-        [Space(10)]
-        [Tooltip("The height the player can jump")]
+        [Space(10)] [Tooltip("The height the player can jump")]
         public float JumpHeight = 1.2f;
 
         [Tooltip("The character uses its own gravity value. The engine default is -9.81f")]
         public float Gravity = -15.0f;
 
-        [Space(10)]
-        
-        public float AttackForce = 2f;
+        [Space(10)] public float AttackForce = 2f;
+
         [Tooltip("The range of the character's dash")]
         public float AttackRange = 5f;
+
         [Tooltip("Time required to pass before being able to attack again. Set to 0f to instantly attack again")]
         public float AttackTimeout = 1f;
-        
+
         [Space(10)]
-        
         [Tooltip("Time required to pass before being able to jump again. Set to 0f to instantly jump again")]
         public float JumpTimeout = 0.50f;
 
@@ -55,8 +53,7 @@ namespace Player
         [Tooltip("If the character is grounded or not. Not part of the CharacterController built in grounded check")]
         public bool Grounded = true;
 
-        [Tooltip("Useful for rough ground")]
-        public float GroundedOffset = -0.14f;
+        [Tooltip("Useful for rough ground")] public float GroundedOffset = -0.14f;
 
         [Tooltip("The radius of the grounded check. Should match the radius of the CharacterController")]
         public float GroundedRadius = 0.28f;
@@ -94,6 +91,9 @@ namespace Player
         private float _terminalVelocity = 53.0f;
 
         // timeout deltatime
+        [SyncVar] private float _attackTime;
+        [SyncVar] private PlayerState _playerState;
+
         private float _attackTimeoutDelta;
         private float _jumpTimeoutDelta;
         private float _fallTimeoutDelta;
@@ -117,6 +117,8 @@ namespace Player
 
         private bool _hasAnimator;
 
+        public float AttackTime => _attackTime;
+        public PlayerState State => _playerState;
         private bool IsCurrentDeviceMouse
         {
             get
@@ -147,11 +149,11 @@ namespace Player
             cam.Follow = child;
             cam.LookAt = child;
         }
-        
+
         private void Start()
         {
             // _cinemachineTargetYaw = CinemachineCameraTarget.transform.rotation.eulerAngles.y;
-            
+
             _hasAnimator = TryGetComponent(out _animator);
             _controller = GetComponent<CharacterController>();
             _input = GetComponent<PlayerInputAssets>();
@@ -171,10 +173,10 @@ namespace Player
 
         private void Update()
         {
-            if(!isLocalPlayer) return;
+            if (!isLocalPlayer) return;
 
             _hasAnimator = TryGetComponent(out _animator);
-            
+
             Attack();
             JumpAndGravity();
             GroundedCheck();
@@ -185,8 +187,11 @@ namespace Player
         {
             base.OnStartAuthority();
 
-            PlayerInput playerInput = GetComponent<PlayerInput>();
+            var playerInput = GetComponent<PlayerInput>();
             playerInput.enabled = true;
+            
+            GetComponent<CapsuleCollider>().isTrigger = false;
+            GetComponent<CapsuleCollider>().enabled = false;
         }
 
         private void AssignAnimationIDs()
@@ -376,11 +381,15 @@ namespace Player
             // Attack
             if (_input.attack && _attackTimeoutDelta <= 0.0f)
             {
+                CmdSaveTime();
+                CmdChangePlayerState(PlayerState.InAttack);
+                Debug.Log($"{gameObject.name} have {State.ToString()} state. Attack start");
+
                 _attackTimeoutDelta = AttackTimeout;
-                
+
                 _forwardVelocity = AttackForce;
             }
-            
+
             // Attack timeout
             if (_attackTimeoutDelta >= 0.0f)
             {
@@ -391,8 +400,17 @@ namespace Player
             {
                 _forwardVelocity -= Time.deltaTime * AttackRange;
             }
-            else _forwardVelocity = 1;
-            
+            else
+            {
+                _forwardVelocity = 1;
+                if (_playerState == PlayerState.InAttack)
+                {
+                     CmdChangePlayerState(PlayerState.Normal);
+                     Debug.Log($"{gameObject.name} have {State.ToString()} state. Attack stop");
+                }
+                   
+            }
+
             _input.attack = false;
         }
 
@@ -424,7 +442,8 @@ namespace Player
                 if (FootstepAudioClips.Length > 0)
                 {
                     var index = Random.Range(0, FootstepAudioClips.Length);
-                    AudioSource.PlayClipAtPoint(FootstepAudioClips[index], transform.TransformPoint(_controller.center), FootstepAudioVolume);
+                    AudioSource.PlayClipAtPoint(FootstepAudioClips[index], transform.TransformPoint(_controller.center),
+                        FootstepAudioVolume);
                 }
             }
         }
@@ -433,9 +452,82 @@ namespace Player
         {
             if (animationEvent.animatorClipInfo.weight > 0.5f)
             {
-                AudioSource.PlayClipAtPoint(LandingAudioClip, transform.TransformPoint(_controller.center), FootstepAudioVolume);
+                AudioSource.PlayClipAtPoint(LandingAudioClip, transform.TransformPoint(_controller.center),
+                    FootstepAudioVolume);
             }
+        }
+
+        [ClientRpc]
+        public void RpcDamage(float hes, float my)
+        {
+            //
+            // Debug.Log($"{gameObject.name} Command Damage");
+            // StartCoroutine(ImmunePlayer());
+            Debug.Log(my + "Took damage:" + hes);
+        }
+
+        [Command]
+        public void CmdSaveTime()
+        {
+            _attackTime = Time.time;
+        }
+        
+        [Command]
+        public void CmdChangePlayerState(PlayerState playerState)
+        {
+            _playerState = playerState;
+        }
+
+        private void OnControllerColliderHit(ControllerColliderHit hit)
+        {
+            if (isServer && hit.gameObject.layer == LayerMask.NameToLayer("Player"))
+            {
+                if (_playerState ==  PlayerState.Immune) return;
+                CmdChangePlayerState(PlayerState.Immune);
+                Debug.Log($"{gameObject.name} OnControllerColliderHit");
+                // var playerMov =  hit.gameObject.GetComponent<PlayerMovement>();
+                //
+                // var otherTime =  playerMov.AttackTime;
+                // var otherState = playerMov.State;
+                // RpcDamage(_attackTime, otherTime);
+                // if (_attackTime < otherTime && State == PlayerState.InAttack)
+                // {
+                //     Debug.Log($"{gameObject.name} Say Damage");
+                // }
+            }
+        }
+
+        // private void OnTriggerEnter(Collider other)
+        // {
+        //     if (isServer && other.gameObject.layer == LayerMask.NameToLayer("Player"))
+        //     {
+        //       var playerMov =  other.gameObject.GetComponent<PlayerMovement>();
+        //         
+        //       var otherTime =  playerMov.AttackTime;
+        //       var otherState = playerMov.State;
+        //           RpcDamage(_attackTime, otherTime);
+        //       if (_attackTime < otherTime && State == PlayerState.InAttack)
+        //       {
+        //           Debug.Log($"{gameObject.name} Say Damage");
+        //       }
+        //     }
+        // }
+
+        private IEnumerator ImmunePlayer()
+        {
+            CmdChangePlayerState(PlayerState.Immune);
+            Debug.Log($"{gameObject.name} have {State.ToString()} state. Start Coroutine");
+            yield return new WaitForSeconds(3);
+            
+            CmdChangePlayerState(PlayerState.Normal);
+            Debug.Log($"{gameObject.name} have {State.ToString()} state. Exit Coroutine");
+        }
+        
+        public enum PlayerState
+        {
+            Normal,
+            InAttack,
+            Immune
         }
     }
 }
-
